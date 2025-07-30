@@ -60,6 +60,11 @@ function App() {
         setError('No images found to download. Please check that the selected columns contain valid image URLs.');
         setCurrentStep('select'); // Go back to column selection
       } else {
+        // Download images to user's local machine
+        if (res.data.images && res.data.images.length > 0) {
+          downloadImagesToLocal(res.data.images);
+        }
+        
         setMessage(res.data.message);
         setTotalImages(res.data.total_images);
         setCurrentStep('complete');
@@ -80,6 +85,43 @@ function App() {
       console.error('Download error:', err);
       setCurrentStep('select'); // Go back to column selection on error
     }
+  };
+
+  const downloadImagesToLocal = (images: any[]) => {
+    // Group images by column
+    const imagesByColumn: { [key: string]: any[] } = {};
+    images.forEach(img => {
+      if (!imagesByColumn[img.column]) {
+        imagesByColumn[img.column] = [];
+      }
+      imagesByColumn[img.column].push(img);
+    });
+
+    // Download each image
+    images.forEach(img => {
+      try {
+        // Convert base64 to blob
+        const byteCharacters = atob(img.data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: `image/${img.extension}` });
+
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = img.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Error downloading image:', img.filename, error);
+      }
+    });
   };
 
   const resetProcess = () => {
