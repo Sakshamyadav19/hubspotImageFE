@@ -52,7 +52,7 @@ function App() {
         headers: {
           'Content-Type': 'application/json'
         },
-        timeout: 300000 // 5 minutes timeout
+        timeout: 60000 // 1 minute timeout
       });
       
       // Check if any images were actually downloaded
