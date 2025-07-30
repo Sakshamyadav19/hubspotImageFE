@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from './api';
 import FileUpload from './components/FileUpload';
 import ColumnSelector from './components/ColumnSelector';
 import { CheckCircle, Download, FileText, AlertCircle } from 'lucide-react';
@@ -24,7 +24,7 @@ function App() {
       setError('');
       const formData = new FormData();
       formData.append('file', file);
-      const res = await axios.post('http://127.0.0.1:5000/upload', formData, {
+      const res = await api.post('/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -46,7 +46,7 @@ function App() {
       setError('');
       setIsDownloading(true);
       
-      const res = await axios.post('http://127.0.0.1:5000/download-images', {
+      const res = await api.post('/download-images', {
         filename,
         columns: selectedColumns,
         downloadPath: 'downloads' // Use default downloads folder
