@@ -60,13 +60,14 @@ function App() {
         setError('No images found to download. Please check that the selected columns contain valid image URLs.');
         setCurrentStep('select'); // Go back to column selection
       } else {
-        // Download images to user's local machine
-        if (res.data.images && res.data.images.length > 0) {
-          downloadImagesToLocal(res.data.images);
-        }
-        
         setMessage(res.data.message);
         setTotalImages(res.data.total_images);
+        
+        // If download is ready, start downloading images in batches
+        if (res.data.download_ready) {
+          await downloadImagesInBatches();
+        }
+        
         setCurrentStep('complete');
       }
     } catch (err: unknown) {
@@ -84,6 +85,74 @@ function App() {
       }
       console.error('Download error:', err);
       setCurrentStep('select'); // Go back to column selection on error
+    }
+  };
+
+  const downloadImagesInBatches = async () => {
+    try {
+      for (const column of selectedColumns) {
+        let startIndex = 0;
+        const batchSize = 5; // Download 5 images at a time
+        
+        while (true) {
+          const res = await api.post('/get-images', {
+            filename,
+            column,
+            start_index: startIndex,
+            batch_size: batchSize
+          }, {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            timeout: 30000 // 30 seconds per batch
+          });
+          
+          if (res.data.success && res.data.images && res.data.images.length > 0) {
+            // Download the images in this batch
+            res.data.images.forEach((img: any) => {
+              try {
+                // Convert base64 to blob
+                const byteCharacters = atob(img.data);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                  byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: `image/${img.extension}` });
+
+                // Create download link
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = img.filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+              } catch (error) {
+                console.error('Error downloading image:', img.filename, error);
+              }
+            });
+            
+            // Update progress
+            setMessage(`Downloaded ${startIndex + res.data.images.length} of ${totalImages} images...`);
+            
+            if (!res.data.has_more) {
+              break; // No more images to download
+            }
+            
+            startIndex = res.data.next_index;
+            
+            // Small delay to prevent overwhelming the browser
+            await new Promise(resolve => setTimeout(resolve, 100));
+          } else {
+            break;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error downloading images in batches:', error);
+      setError('Error downloading images. Please try again.');
     }
   };
 
