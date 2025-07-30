@@ -63,11 +63,8 @@ function App() {
         setMessage(res.data.message);
         setTotalImages(res.data.total_images);
         
-        // If download is ready, start downloading images in batches
-        if (res.data.download_ready) {
-          setCurrentStep('download'); // Stay on download step while downloading
-          await downloadImagesInBatches();
-        }
+        // Images are now downloaded directly to the server
+        // No need for client-side downloading
         
         setCurrentStep('complete');
       }
@@ -89,89 +86,7 @@ function App() {
     }
   };
 
-  const downloadImagesInBatches = async () => {
-    try {
-      let totalDownloaded = 0;
-      
-      for (const column of selectedColumns) {
-        let startIndex = 0;
-        const batchSize = 3; // Download 3 images at a time to be safer
-        
-        while (true) {
-          try {
-            const res = await api.post('/get-images', {
-              filename,
-              column,
-              start_index: startIndex,
-              batch_size: batchSize
-            }, {
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              timeout: 30000 // 30 seconds per batch
-            });
-            
-            if (res.data.success && res.data.images && res.data.images.length > 0) {
-              // Download the images in this batch one by one with delays
-              for (const img of res.data.images) {
-                try {
-                  // Convert base64 to blob
-                  const byteCharacters = atob(img.data);
-                  const byteNumbers = new Array(byteCharacters.length);
-                  for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                  }
-                  const byteArray = new Uint8Array(byteNumbers);
-                  const blob = new Blob([byteArray], { type: `image/${img.extension}` });
 
-                  // Create download link
-                  const url = window.URL.createObjectURL(blob);
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = img.filename;
-                  link.style.display = 'none';
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  window.URL.revokeObjectURL(url);
-                  
-                  totalDownloaded++;
-                  setMessage(`Downloaded ${totalDownloaded} of ${totalImages} images...`);
-                  
-                  // Wait a bit between downloads to prevent browser blocking
-                  await new Promise(resolve => setTimeout(resolve, 500));
-                  
-                } catch (error) {
-                  console.error('Error downloading image:', img.filename, error);
-                }
-              }
-              
-              if (!res.data.has_more) {
-                break; // No more images to download
-              }
-              
-              startIndex = res.data.next_index;
-              
-              // Wait between batches
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            } else {
-              break;
-            }
-          } catch (batchError) {
-            console.error('Error in batch:', batchError);
-            // Continue with next batch
-            startIndex += batchSize;
-          }
-        }
-      }
-      
-      setMessage(`Successfully downloaded ${totalDownloaded} images to your Downloads folder!`);
-      
-    } catch (error) {
-      console.error('Error downloading images in batches:', error);
-      setError('Error downloading images. Please try again.');
-    }
-  };
 
   const downloadImagesToLocal = (images: any[]) => {
     // Group images by column
