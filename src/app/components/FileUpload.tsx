@@ -131,7 +131,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
           
           <p className="text-gray-600 mb-4 max-w-md">
             Drag and drop your Excel or CSV file here, or click to browse. 
-            We'll analyze your data and help you download images from URL columns.
+            We&apos;ll analyze your data and help you download images from URL columns.
           </p>
           
           <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">

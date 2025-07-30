@@ -14,7 +14,6 @@ function App() {
   const [message, setMessage] = useState('');
   const [totalImages, setTotalImages] = useState(0);
   const [currentStep, setCurrentStep] = useState<ProcessingStep>('upload');
-  const [isDownloading, setIsDownloading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [error, setError] = useState('');
 
@@ -44,7 +43,6 @@ function App() {
   const handleDownload = async () => {
     try {
       setError('');
-      setIsDownloading(true);
       
       const res = await api.post('/download-images', {
         filename,
@@ -66,22 +64,21 @@ function App() {
         setTotalImages(res.data.total_images);
         setCurrentStep('complete');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Handle different types of errors gracefully
-      if (err.response?.data?.error) {
+      const error = err as { response?: { data?: { error?: string } }, code?: string, message?: string };
+      if (error.response?.data?.error) {
         // Server returned a specific error message
-        setError(err.response.data.error);
-      } else if (err.code === 'ECONNREFUSED') {
+        setError(error.response.data.error);
+      } else if (error.code === 'ECONNREFUSED') {
         setError('Cannot connect to server. Please make sure the backend is running.');
-      } else if (err.message?.includes('timeout')) {
+      } else if (error.message?.includes('timeout')) {
         setError('Request timed out. Please try again.');
       } else {
         setError('Please try different columns.');
       }
       console.error('Download error:', err);
       setCurrentStep('select'); // Go back to column selection on error
-    } finally {
-      setIsDownloading(false);
     }
   };
 
@@ -170,7 +167,7 @@ function App() {
                   <div className="text-red-700 text-sm whitespace-pre-line">{error}</div>
                   {error.includes('Please try different columns') && (
                     <div className="mt-2 p-2 bg-red-100 rounded text-xs text-red-800">
-                      <strong>Tip:</strong> Look for columns with "Recommended" or "Suggested" badges that are likely to contain image URLs.
+                      <strong>Tip:</strong> Look for columns with &quot;Recommended&quot; or &quot;Suggested&quot; badges that are likely to contain image URLs.
                     </div>
                   )}
                 </div>
@@ -273,7 +270,7 @@ function App() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-blue-700 text-sm">
                   This may take a few minutes depending on the number of images. 
-                  Please don't close this window.
+                  Please don&apos;t close this window.
                 </p>
               </div>
             </div>

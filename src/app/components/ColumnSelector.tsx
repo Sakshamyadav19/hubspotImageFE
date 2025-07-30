@@ -116,6 +116,7 @@ const ColumnSelector: React.FC<ColumnSelectorProps> = ({ columns, selected, onCh
                       suggestion === 'medium' ? 'bg-yellow-100' : 'bg-gray-100'
                     }`}>
                       {suggestion !== 'low' ? (
+                        // eslint-disable-next-line jsx-a11y/alt-text
                         <Image className={`${
                           suggestion === 'high' ? 'text-green-600' :
                           suggestion === 'medium' ? 'text-yellow-600' : ''
